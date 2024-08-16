@@ -85,8 +85,8 @@ public class FhirXmlSynopsisTree {
         NamedNodeMap attributes = element.getAttributes();// Add element's attributes to the current node
         for (int j = 0; j < attributes.getLength(); j++) {
             Attr attr = (Attr) attributes.item(j);
-            if (attr.getNodeValue())
-                currentNode.addAttribute(attr.getNodeName(), attr.getNodeValue(), recordId);
+
+            currentNode.addAttribute(attr.getNodeName(), attr.getNodeValue(), recordId);
             if (attr.getName().equals("value")) {
                 elemKey = element.getNodeName() + ":" + attr.getValue();
                 if (!arrayList.containsKey(elemKey)) {
