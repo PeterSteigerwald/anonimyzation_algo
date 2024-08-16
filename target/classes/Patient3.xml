@@ -1,0 +1,51 @@
+<Patient>
+    <meta>
+        <tag>
+            <system value="https://smarthealthit.org/tags" />
+            <code value="smart-8-2017" />
+        </tag>
+    </meta>
+    <id value="smart-1098667" />
+    <text>
+        <status value="generated" />
+        <div xmlns="http://www.w3.org/1999/xhtml">
+            <p>
+                Robert Hill
+            </p>
+        </div>
+    </text>
+    <identifier>
+        <use value="usual" />
+        <type>
+            <coding>
+                <system value="http://hl7.org/fhir/v2/0203" />
+                <code value="MR" />
+                <display value="Medical record number" />
+            </coding>
+            <text value="Medical record number" />
+        </type>
+        <system value="http://hospital.smarthealthit.org" />
+        <value value="1098667" />
+    </identifier>
+    <name>
+        <use value="official" />
+        <family value="Hill" />
+        <given value="Robert" />
+        <given value="P." />
+    </name>
+    <telecom>
+        <system value="email" />
+        <value value="robert.hill@example.com" />
+    </telecom>
+    <gender value="male" />
+    <birthDate value="1957-06-20" />
+    <address>
+        <use value="home" />
+        <line value="42 Park St" />
+        <city value="Bixby" />
+        <state value="OK" />
+        <postalCode value="74008" />
+        <country value="USA" />
+    </address>
+    <active value="true" />
+</Patient>

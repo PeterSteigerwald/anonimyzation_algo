@@ -1,0 +1,56 @@
+<Patient>
+    <meta>
+        <tag>
+            <system value="https://smarthealthit.org/tags" />
+            <code value="smart-8-2017" />
+        </tag>
+    </meta>
+    <id value="smart-1137192" />
+    <text>
+        <status value="generated" />
+        <div xmlns="http://www.w3.org/1999/xhtml">
+            <p>
+                Joshua Williams
+            </p>
+        </div>
+    </text>
+    <identifier>
+        <use value="usual" />
+        <type>
+            <coding>
+                <system value="http://hl7.org/fhir/v2/0203" />
+                <code value="MR" />
+                <display value="Medical record number" />
+            </coding>
+            <text value="Medical record number" />
+        </type>
+        <system value="http://hospital.smarthealthit.org" />
+        <value value="1137192" />
+    </identifier>
+    <name>
+        <use value="official" />
+        <family value="Williams" />
+        <given value="Joshua" />
+        <given value="P." />
+    </name>
+    <telecom>
+        <system value="phone" />
+        <value value="800-232-5751" />
+        <use value="mobile" />
+    </telecom>
+    <telecom>
+        <system value="email" />
+        <value value="joshua.williams@example.com" />
+    </telecom>
+    <gender value="male" />
+    <birthDate value="1958-04-14" />
+    <address>
+        <use value="home" />
+        <line value="96 East Rd" />
+        <city value="Tulsa" />
+        <state value="OK" />
+        <postalCode value="74108" />
+        <country value="USA" />
+    </address>
+    <active value="true" />
+</Patient>
