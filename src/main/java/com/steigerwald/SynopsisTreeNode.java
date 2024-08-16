@@ -62,6 +62,27 @@ public class SynopsisTreeNode {
         return attributes.size();
     }
 
+    public int getDepth() {
+        return getDepthRecursive(this, 0);
+    }
+
+    private int getDepthRecursive(SynopsisTreeNode node, int depth) {
+        if (node.children.isEmpty()) {
+            return depth;
+        } else {
+            int maxDepth = depth;
+            for (SynopsisTreeNode child : node.children) {
+                maxDepth = Math.max(maxDepth, getDepthRecursive(child, depth + 1));
+            }
+            return maxDepth;
+        }
+    }
+
+    public int getCardinality() {
+        // Not sure how to weigh this. Placeholder is the number of recordIds
+        return this.recordIds.size();
+    }
+
     @Override
     public String toString() {
         return "Node{" +

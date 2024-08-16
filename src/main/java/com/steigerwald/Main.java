@@ -11,5 +11,8 @@ public class Main {
 
         tree.parseFhirFiles(dir);
         System.out.println(tree);
+        double rdp = tree.calculateRPDForTree();
+
+        System.out.println("Tree-RDP = " + rdp);
     }
 }

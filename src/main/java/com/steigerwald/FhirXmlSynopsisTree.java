@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,122 +151,66 @@ public class FhirXmlSynopsisTree {
         return null;
     }
 
-    private SynopsisTreeNode buildFhirResource(Element element, int recordId, boolean firstRun) {
-        SynopsisTreeNode node;
-        if (firstRun) {
-            node = root;
+    public double calculateRPD(SynopsisTreeNode node) {
+        List<List<SynopsisTreeNode>> allPaths = new ArrayList<>();
+        findAllPaths(node, new ArrayList<>(), allPaths);
+        double totalRPD = 0.0;
+
+        for (List<SynopsisTreeNode> path : allPaths) {
+            totalRPD += calculateRPDForPath(path);
+        }
+
+        return totalRPD / allPaths.size();
+    }
+
+    private void findAllPaths(SynopsisTreeNode node, List<SynopsisTreeNode> currentPath,
+            List<List<SynopsisTreeNode>> allPaths) {
+        currentPath.add(node);
+
+        if (node.getChildren().isEmpty()) {
+            allPaths.add(new ArrayList<>(currentPath));
         } else {
-            node = new SynopsisTreeNode(element.getNodeName(), null);
-        }
-
-        node.addRecordId(recordId);
-
-        if (!firstRun) {
-            // Add attributes
-            String elemKey = element.getNodeName();
-            NamedNodeMap attributes = element.getAttributes();
-            Attr attr = (Attr) attributes.item(0);
-            if (attr == null) {
-                if (!arrayList.containsKey(elemKey)) {
-                    arrayList.put(elemKey, new ArrayEntry(""));
-                }
-            } else if (attr.getName().equals("value")) {
-                node.addValue(attr.getValue());
-                elemKey = element.getNodeName() + ":" + attr.getValue();
-                if (!arrayList.containsKey(elemKey)) {
-                    arrayList.put(elemKey, new ArrayEntry(attr.getValue()));
-                }
-
-            } else {
-                if (!arrayList.containsKey(elemKey)) {
-                    arrayList.put(elemKey, new ArrayEntry(""));
-                }
-            }
-
-            ArrayEntry entry = arrayList.get(elemKey);
-            entry.addRecordId(recordId);
-            entry.addSidelink(node);
-        }
-
-        // Recursively add child element
-        if (firstRun) {
-            SynopsisTreeNode lastNode = buildFhirResource(element, recordId, false);
-            return lastNode;
-        } else {
-            NodeList children = element.getChildNodes();
-            for (int i = 0; i < children.getLength(); i++) {
-                if (children.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    Element childElement = (Element) children.item(i);
-
-                    SynopsisTreeNode childNode = buildFhirResource(childElement, recordId, false);
-                    node.addChild(childNode);
-                }
+            for (SynopsisTreeNode child : node.getChildren()) {
+                findAllPaths(child, currentPath, allPaths);
             }
         }
-        return node;
+
+        currentPath.remove(currentPath.size() - 1);
     }
 
-    private SynopsisTreeNode buildFhirResourceTest(Element element, SynopsisTreeNode currentNode, int recordId) {
-        // Use currentNode instead of root in all cases
-        SynopsisTreeNode node = findOrCreateNode(currentNode, element, recordId);
+    private double calculateRPDForPath(List<SynopsisTreeNode> path) {
+        double domainProduct = 1.0;
 
-        node.addRecordId(recordId);
-
-        // Add attributes and values
-        String elemKey = element.getNodeName();
-        NamedNodeMap attributes = element.getAttributes();
-        Attr attr = (Attr) attributes.item(0);
-        if (attr != null && attr.getName().equals("value")) {
-            node.addValue(attr.getValue());
-            elemKey = element.getNodeName() + ":" + attr.getValue();
+        for (SynopsisTreeNode node : path) {
+            int d = node.getDepth();
+            int c = node.getCardinality();
+            domainProduct *= (d > 0 ? d : 1) * (c > 0 ? c : 1);
         }
 
-        ArrayEntry entry = arrayList.computeIfAbsent(elemKey, k -> new ArrayEntry(attr == null ? "" : attr.getValue()));
-        entry.addRecordId(recordId);
-        entry.addSidelink(node);
-
-        // Recursively process child elements
-        NodeList children = element.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            if (children.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                Element childElement = (Element) children.item(i);
-                SynopsisTreeNode childNode = buildFhirResourceTest(childElement, node, recordId);
-                node.addChild(childNode);
-            }
-        }
-
-        return node;
+        return 1.0 / domainProduct;
     }
 
-    // New method to find an existing node or create a new one
-    private SynopsisTreeNode findOrCreateNode(SynopsisTreeNode parent, Element element, int recordId) {
-        for (SynopsisTreeNode child : parent.getChildren()) {
-            if (child.getName().equals(element.getNodeName()) && attributesMatch(child, element)) {
-                child.addRecordId(recordId);
-                return child;
-            }
-        }
-
-        // No matching child found, create a new node
-        SynopsisTreeNode newNode = new SynopsisTreeNode(element.getNodeName(), null);
-        parent.addChild(newNode);
-        return newNode;
+    public double calculateRPDForTree() {
+        return calculateRPD(root);
     }
 
-    // Helper method to compare attributes of a node with an element
-    private boolean attributesMatch(SynopsisTreeNode node, Element element) {
-        NamedNodeMap attributes = element.getAttributes();
+    public double calculateML2(FhirXmlSynopsisTree originalTree, int maxGeneralizationLevel) {
+        int totalOriginalSubtrees = 0;
+        int totalAnonymizedSubtrees = 0;
 
-        if (attributes.getLength() < 2) {
-            return false;
+        for (int level = 0; level <= maxGeneralizationLevel; level++) {
+            int originalSubtreesAtLevel = countFrequentSubtreesAtLevel(originalTree.getRoot(), level);
+            int anonymizedSubtreesAtLevel = countFrequentSubtreesAtLevel(this.root, level);
+            totalOriginalSubtrees += originalSubtreesAtLevel;
+            totalAnonymizedSubtrees += anonymizedSubtreesAtLevel;
         }
 
-        for (int i = 0; i < attributes.getLength(); i++) {
-            Attr attr = (Attr) attributes.item(i);
-            if (!node.getValue().equals(attr.getValue())) {
-                return false;
-            }
-        }
-        return true;
+        return 1 - (double) totalAnonymizedSubtrees / totalOriginalSubtrees;
+    }
+
+    private int countFrequentSubtreesAtLevel(SynopsisTreeNode node, int level) {
+        return 0;
+        // Placeholder for subtree counting logic
+        // TODO: FInd a way on how to count the Subtrees
     }
 }
