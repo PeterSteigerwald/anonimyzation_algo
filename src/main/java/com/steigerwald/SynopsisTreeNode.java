@@ -1,8 +1,10 @@
 package com.steigerwald;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SynopsisTreeNode {
@@ -10,14 +12,14 @@ public class SynopsisTreeNode {
     private String value;
     private Set<Integer> recordIds;
     private List<SynopsisTreeNode> children;
-    private List<Attribute> attributes;
+    private Map<String, Attribute> attributes;
 
     public SynopsisTreeNode(String name, String value) {
         this.name = name;
         this.value = value != null ? value.trim() : "";
         this.recordIds = new HashSet<>();
         this.children = new ArrayList<>();
-        this.attributes = new ArrayList<>();
+        this.attributes = new HashMap<>();
     }
 
     public void addRecordId(int recordId) {
@@ -32,8 +34,8 @@ public class SynopsisTreeNode {
         this.value = value;
     }
 
-    public void addAttribute(String name, String value) {
-        this.attributes.add(new Attribute(name, value));
+    public void addAttribute(String name, String value, int recordId) {
+        this.attributes.put(value, new Attribute(name, value, recordId));
     }
 
     public String getName() {
@@ -52,7 +54,7 @@ public class SynopsisTreeNode {
         return children;
     }
 
-    public List<Attribute> getAttributes() {
+    public Map<String, Attribute> getAttributes() {
         return attributes;
     }
 
@@ -73,14 +75,21 @@ public class SynopsisTreeNode {
 class Attribute {
     private String name;
     private String value;
+    private Set<Integer> recordIds;
 
-    public Attribute(String name, String value) {
+    public Attribute(String name, String value, int recordId) {
         this.name = name;
         this.value = value;
+        this.recordIds = new HashSet<>();
+        recordIds.add(recordId);
+    }
+
+    public void addRecordId(int recordId) {
+        recordIds.add(recordId);
     }
 
     @Override
     public String toString() {
-        return name + "=\"" + value + "\"";
+        return name + "=\"" + value + "\"" + recordIds;
     }
 }

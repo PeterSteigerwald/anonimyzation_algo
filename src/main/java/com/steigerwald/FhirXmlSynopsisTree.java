@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -38,14 +39,13 @@ public class FhirXmlSynopsisTree {
                     .filter(path -> path.toString().endsWith(".xml"))
                     .forEach(path -> {
                         int fileNumber = fileNmbr.incrementAndGet(); // Count up and get and int
-                        SynopsisTreeNode fhirData = parseXML(path.toString(), fileNumber);
-                        System.out.println(fhirData);
+                        parseXML(path.toString(), fileNumber);
                     });
 
         }
     }
 
-    private SynopsisTreeNode parseXML(String filePath, int recordId) {
+    private void parseXML(String filePath, int recordId) {
         try {
             File xmlFile = new File(filePath);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -54,15 +54,95 @@ public class FhirXmlSynopsisTree {
             Document document = builder.parse(xmlFile);
             document.getDocumentElement().normalize();
 
-            Element rootElem = document.getDocumentElement();
-            SynopsisTreeNode fhirResource = buildFhirResourceTest(rootElem, root, recordId);
+            // Get the root element of the current XML file
+            Element fileRootElement = document.getDocumentElement();
 
-            return fhirResource;
+            // Create a new child for the common root node
+            // Find if a corresponding root node already exists
+            SynopsisTreeNode existingRootNode = findChildWithName(root.getChildren(), fileRootElement.getNodeName());
+
+            // If not found, create a new child node for the common root
+            if (existingRootNode == null) {
+                existingRootNode = new SynopsisTreeNode(fileRootElement.getTagName(), null);
+                root.addChild(existingRootNode);
+            }
+
+            // Add the current file ID to this root node
+            existingRootNode.addRecordId(recordId);
+
+            traverseAndAdd(fileRootElement, existingRootNode, recordId);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+
         }
+    }
+
+    private void traverseAndAdd(Element element, SynopsisTreeNode currentNode, int recordId) {
+        // Add current file ID to this node
+        currentNode.addRecordId(recordId);
+        String elemKey = element.getNodeName();
+        NamedNodeMap attributes = element.getAttributes();// Add element's attributes to the current node
+        for (int j = 0; j < attributes.getLength(); j++) {
+            Attr attr = (Attr) attributes.item(j);
+            if (attr.getNodeValue())
+                currentNode.addAttribute(attr.getNodeName(), attr.getNodeValue(), recordId);
+            if (attr.getName().equals("value")) {
+                elemKey = element.getNodeName() + ":" + attr.getValue();
+                if (!arrayList.containsKey(elemKey)) {
+                    arrayList.put(elemKey, new ArrayEntry(attr.getValue()));
+                }
+
+            } else {
+                if (!arrayList.containsKey(elemKey)) {
+                    arrayList.put(elemKey, new ArrayEntry(""));
+                }
+            }
+        }
+        ArrayEntry entry = arrayList.get(elemKey);
+        if (entry != null) {
+            entry.addRecordId(recordId);
+            entry.addSidelink(currentNode);
+        }
+        // Process child elements
+        NodeList nodeList = element.getChildNodes();
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                Element childElement = (Element) node;
+                String childTag = childElement.getTagName();
+
+                // Find if a child with the same name already exists
+                SynopsisTreeNode existingChildNode = findChildWithName(currentNode.getChildren(), childTag);
+
+                // If not found, create a new child node and add it to the current node
+                if (existingChildNode == null) {
+                    SynopsisTreeNode newChildNode = new SynopsisTreeNode(childTag, null);
+                    currentNode.addChild(newChildNode);
+                    existingChildNode = newChildNode;
+                }
+
+                // Set the text value of the current node (if it has any)
+                // String textContent = element.getTextContent().trim();
+                // if (!textContent.isEmpty()) {
+                // existingChildNode.addValue(textContent);
+                // }
+
+                // Recursively traverse the child element
+                traverseAndAdd(childElement, existingChildNode, recordId);
+            }
+        }
+    }
+
+    // Helper method to find a child node with a specific name
+    private SynopsisTreeNode findChildWithName(List<SynopsisTreeNode> children, String name) {
+        for (SynopsisTreeNode child : children) {
+            if (child.getName().equals(name)) {
+                return child;
+            }
+        }
+        return null;
     }
 
     private SynopsisTreeNode buildFhirResource(Element element, int recordId, boolean firstRun) {
@@ -96,6 +176,7 @@ public class FhirXmlSynopsisTree {
                     arrayList.put(elemKey, new ArrayEntry(""));
                 }
             }
+
             ArrayEntry entry = arrayList.get(elemKey);
             entry.addRecordId(recordId);
             entry.addSidelink(node);

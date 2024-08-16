@@ -57,6 +57,12 @@ public class StructureData {
          * prefix: string
          * suffix: string
          * period: Period
+         * 
+         * Cut text, prefix, suffix, period
+         * Adapt use, family, given to have a max of X letters
+         * Keep going until only one if left (if needed for multiple runs)
+         * Next step cut family
+         * Next step cut given
          */
 
         // <name><!-- 0..* HumanName A name associated with the patient --></name>

@@ -1,0 +1,29 @@
+<Condition>
+    <meta>
+        <tag>
+            <system value="https://smarthealthit.org/tags" />
+            <code value="smart-8-2017" />
+        </tag>
+    </meta>
+    <id value="smart-Condition-120" />
+    <text>
+        <status value="generated" />
+        <div xmlns="http://www.w3.org/1999/xhtml">
+            Abnormal weight loss
+        </div>
+    </text>
+    <patient>
+        <reference value="Patient/smart-1032702" />
+    </patient>
+    <code>
+        <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="267024001" />
+            <display value="Abnormal weight loss" />
+        </coding>
+        <text value="Abnormal weight loss" />
+    </code>
+    <clinicalStatus value="active" />
+    <verificationStatus value="confirmed" />
+    <onsetDateTime value="2011-08-12" />
+</Condition>
