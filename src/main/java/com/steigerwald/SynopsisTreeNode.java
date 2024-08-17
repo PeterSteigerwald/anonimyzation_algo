@@ -109,6 +109,18 @@ class Attribute {
         recordIds.add(recordId);
     }
 
+    public Set<Integer> getRecordIds() {
+        return recordIds;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public String getName() {
+        return name;
+    }
+
     @Override
     public String toString() {
         return name + "=\"" + value + "\"" + recordIds;

@@ -3,15 +3,25 @@ package com.steigerwald;
 import org.w3c.dom.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -149,6 +159,90 @@ public class FhirXmlSynopsisTree {
             }
         }
         return null;
+    }
+
+    public void writeXmlFilesPerRecordId(Path outputDir) throws Exception {
+        Set<Integer> recordIds = collectRecordIds(root);
+
+        for (Integer recordId : recordIds) {
+            String xmlContent = toXmlForRecordId(recordId);
+            String fileName = "record_" + recordId + ".xml";
+            File outputFile = outputDir.resolve(fileName).toFile();
+            writeXmlToFile(xmlContent, outputFile);
+        }
+    }
+
+    private Set<Integer> collectRecordIds(SynopsisTreeNode node) {
+        Set<Integer> recordIds = new HashSet<>();
+        for (SynopsisTreeNode child : node.getChildren()) {
+            recordIds.addAll(child.getRecordIds());
+        }
+        return recordIds;
+    }
+
+    private String toXmlForRecordId(int recordId) throws Exception {
+        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+
+        // Create a new XML Document
+        Document doc = docBuilder.newDocument();
+
+        // Convert the root node to an XML element, filtering by recordId
+        Element rootElement = createXmlElementForRecordId(doc, root, recordId);
+        doc.appendChild(rootElement);
+
+        // Convert the Document to a string
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        DOMSource source = new DOMSource(doc);
+        StringWriter writer = new StringWriter();
+        StreamResult result = new StreamResult(writer);
+        transformer.transform(source, result);
+
+        return writer.toString();
+    }
+
+    private Element createXmlElementForRecordId(Document doc, SynopsisTreeNode node, int recordId) {
+        if (!node.getRecordIds().contains(recordId) && !node.getName().equals("root")) {
+            return null;
+        }
+
+        // Create an element with the node's name
+        Element element = doc.createElement(node.getName());
+
+        // Add attributes to the element that belong to the specified recordId
+        for (Map.Entry<String, Attribute> entry : node.getAttributes().entrySet()) {
+            if (entry.getValue().getRecordIds().contains(recordId)) {
+                element.setAttribute(entry.getValue().getName(), escapeXmlValue(entry.getValue().getValue()));
+            }
+        }
+
+        // Recursively create child elements
+        for (SynopsisTreeNode child : node.getChildren()) {
+            Element childElement = createXmlElementForRecordId(doc, child, recordId);
+            if (childElement != null) {
+                element.appendChild(childElement);
+            }
+        }
+
+        return element;
+    }
+
+    private String escapeXmlValue(String input) {
+        // Replace special characters with their XML escape sequences
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
+    }
+
+    private void writeXmlToFile(String xmlContent, File file) throws Exception {
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(xmlContent);
+        }
     }
 
     public double calculateRPD(SynopsisTreeNode node) {
